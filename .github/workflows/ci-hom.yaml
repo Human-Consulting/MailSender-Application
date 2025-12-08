@@ -21,4 +21,6 @@ jobs:
           cache: 'maven'
 
       - name: Build do projeto
-        run: mvn -B package --no-transfer-progress
+        run: |
+          cd mailsender-api
+          mvn -B package --no-transfer-progress
