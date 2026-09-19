@@ -9,17 +9,33 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import org.springframework.mail.SimpleMailMessage;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 @Service
 public class EmailNotifier {
-    private final JavaMailSender emailSender;
+  private final JavaMailSender emailSender;
 
-    public EmailNotifier(JavaMailSender emailSender) {
-        this.emailSender = emailSender;
+  public EmailNotifier(JavaMailSender emailSender) {
+    this.emailSender = emailSender;
+  }
+
+  public void send(String to, String subject, String bodyHtml) {
+    try {
+      MimeMessage message = emailSender.createMimeMessage();
+      MimeMessageHelper helper = new MimeMessageHelper(message, true);
+      helper.setFrom(new InternetAddress("contato@humanconsulting.com.br", "Human Consulting"));
+      helper.setTo(to);
+      helper.setSubject(subject);
+      helper.setText(bodyHtml, true);
+      emailSender.send(message);
+    } catch (Exception e) {
+      e.printStackTrace();
     }
+  }
 
     public void update(EmailUpdateRequestDto dto) {
         List<String> emails = new ArrayList<>();
