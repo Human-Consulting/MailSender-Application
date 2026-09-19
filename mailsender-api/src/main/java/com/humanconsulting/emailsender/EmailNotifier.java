@@ -24,7 +24,8 @@ public class EmailNotifier {
     public void update(EmailUpdateRequestDto dto) {
         List<String> emails = new ArrayList<>();
         emails.add(dto.getEmailResponsavelProjeto());
-        if (!dto.getEmailResponsavelProjeto().equals(dto.getEmailResponsavelTarefa()))
+        if (dto.getEmailResponsavelTarefa() != null
+                && !dto.getEmailResponsavelTarefa().equals(dto.getEmailResponsavelProjeto()))
             emails.add(dto.getEmailResponsavelTarefa());
         String assunto = "Impedimento no Projeto: " + dto.getDescricaoProjeto();
         String mensagem = String.format("""
@@ -52,12 +53,12 @@ public class EmailNotifier {
                             </div>
                         """,
                 dto.isComImpedimento() ? "Impedimento resolvido!" : "Novo impedimento identificado!",
-                dto.getDescricaoProjeto(),
-                dto.getDescricaoSprint(),
-                dto.getDescricaoTarefa(),
-                dto.getNomeResponsavelTarefa(),
-                dto.getComentario(),
-                String.join(", ", emails)
+                escapeHtml(dto.getDescricaoProjeto()),
+                escapeHtml(dto.getDescricaoSprint()),
+                escapeHtml(dto.getDescricaoTarefa()),
+                escapeHtml(dto.getNomeResponsavelTarefa()),
+                escapeHtml(dto.getComentario()),
+                escapeHtml(String.join(", ", emails))
         );
         enviarEmail(emails, assunto, mensagem);
     }
@@ -102,18 +103,21 @@ public class EmailNotifier {
                               </div>
                             </div>
                         """,
-                dto.getNome(),
-                dto.getNomeEmpresa(),
-                dto.getCargo(),
-                dto.getArea(),
-                dto.getEmail(),
-                dto.getSenha(),
-                dto.getEmail()
+                escapeHtml(dto.getNome()),
+                escapeHtml(dto.getNomeEmpresa()),
+                escapeHtml(dto.getCargo()),
+                escapeHtml(dto.getArea()),
+                escapeHtml(dto.getEmail()),
+                escapeHtml(dto.getSenha()),
+                escapeHtml(dto.getEmail())
         );
         enviarEmail(email, assunto, conteudo);
     }
 
     public void codigo(UsuarioEnviarCodigoRequestDto dto) {
+        if (dto.getCodigo() == null || dto.getCodigo().length() != 6) {
+            throw new IllegalArgumentException("Código de verificação inválido: deve conter exatamente 6 caracteres");
+        }
         List<String> email = new ArrayList<>();
         email.add(dto.getEmail());
         String conteudo = String.format("""
@@ -194,7 +198,7 @@ public class EmailNotifier {
                 dto.getCodigo().charAt(3),
                 dto.getCodigo().charAt(4),
                 dto.getCodigo().charAt(5),
-                dto.getEmail()
+                escapeHtml(dto.getEmail())
         );
         enviarEmail(email, "Reset de Senha", conteudo);
     }
@@ -202,7 +206,7 @@ public class EmailNotifier {
     private void enviarEmail(List<String> destinatarios, String assunto, String conteudo) {
         try {
             MimeMessage message = emailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true);
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             helper.setFrom(new InternetAddress("contato@humanconsulting.com.br", "Human Consulting"));
             helper.setTo(destinatarios.toArray(new String[0]));
             helper.setSubject(assunto);
@@ -211,5 +215,17 @@ public class EmailNotifier {
         } catch (Exception e) {
             throw new RuntimeException("Erro ao enviar e-mail", e);
         }
+    }
+
+    private static String escapeHtml(String input) {
+        if (input == null) {
+            return null;
+        }
+        return input
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#x27;");
     }
 }
